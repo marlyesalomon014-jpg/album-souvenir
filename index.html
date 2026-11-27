@@ -14,10 +14,29 @@
 
 body {
   margin: 0;
-  background: #eeeae5;
-  color: #edebe8;
+  min-height: 100vh;
+  background: #d4ccc2;
+  color: #403a35;
   font-family: Georgia, serif;
   text-align: center;
+  position: relative;
+  isolation: isolate;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20px;
+  z-index: -1;
+
+  background:
+    linear-gradient(
+      rgba(35, 30, 27, 0.55),
+      rgba(35, 30, 27, 0.55)
+    ),
+    url("fond.jpg") center / cover no-repeat;
+
+  filter: blur(9px);
 }
 
 header { padding: 24px 12px 10px; }
