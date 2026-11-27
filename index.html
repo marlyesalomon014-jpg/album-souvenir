@@ -4,49 +4,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Notre album souvenir</title>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
 
 <style>
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
-  min-height: 100vh;
   background: #eeeae5;
-  font-family: Georgia, serif;
   color: #403a35;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  font-family: Georgia, serif;
+  text-align: center;
 }
 
-header {
-  text-align: center;
-  padding: 25px 15px 12px;
-}
+header { padding: 24px 12px 10px; }
 
 h1 {
-  font-weight: normal;
   font-size: 25px;
+  font-weight: normal;
   margin: 0 0 8px;
 }
 
 .subtitle {
-  font-size: 14px;
   color: #766d65;
+  font-size: 14px;
+}
+
+#status {
+  margin: 15px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
 }
 
 #book-area {
   width: 100%;
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 15px;
+  padding: 10px;
 }
 
 #book {
@@ -58,59 +55,48 @@ h1 {
   overflow: hidden;
 }
 
-.page img {
-  display: block;
+.page canvas {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  background: white;
+  display: block;
 }
 
 .controls {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 18px;
-  padding: 12px;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  font-family: Arial, sans-serif;
 }
 
 button {
-  border: none;
   background: #62584f;
   color: white;
+  border: none;
   border-radius: 25px;
-  padding: 12px 22px;
+  padding: 12px 20px;
   font-size: 14px;
-  cursor: pointer;
 }
 
-button:disabled {
-  opacity: 0.4;
-}
-
-#counter {
-  font-size: 14px;
-  min-width: 75px;
-  text-align: center;
-}
+button:disabled { opacity: .4; }
 
 .download {
-  margin: 12px 0 30px;
-  text-decoration: none;
-  background: #fff;
-  color: #51473e;
+  display: inline-block;
+  margin: 10px auto 25px;
+  padding: 13px 22px;
   border: 1px solid #c9bfb4;
   border-radius: 25px;
-  padding: 13px 22px;
+  background: white;
+  color: #51473e;
+  text-decoration: none;
   font-family: Arial, sans-serif;
-  font-size: 14px;
 }
 
 footer {
-  font-size: 12px;
-  color: #8a8179;
   padding: 10px;
-  text-align: center;
+  color: #8a8179;
+  font-size: 12px;
 }
 </style>
 </head>
@@ -122,92 +108,126 @@ footer {
   <div class="subtitle">Des moments précieux à garder</div>
 </header>
 
+<div id="status">Préparation de votre album...</div>
+
 <div id="book-area">
   <div id="book"></div>
 </div>
 
 <div class="controls">
-  <button id="previous">Précédent</button>
+  <button id="previous" disabled>Précédent</button>
   <span id="counter">Page 1</span>
-  <button id="next">Suivant</button>
+  <button id="next" disabled>Suivant</button>
 </div>
 
-<a class="download" href="album.pdf" download>
+<a class="download" href="./album.pdf" download="album-souvenir.pdf">
   Télécharger l'album en PDF
 </a>
 
-<footer>
-  Créé avec affection
-</footer>
+<footer>Créé avec affection</footer>
 
 <script>
-const pages = [
-  "page-1.jpg",
-  "page-2.jpg",
-  "page-3.jpg",
-  "page-4.jpg"
-  // Ajoute ici les autres pages dans l'ordre.
-];
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
+const status = document.getElementById("status");
 const bookElement = document.getElementById("book");
+const previousButton = document.getElementById("previous");
+const nextButton = document.getElementById("next");
+const counter = document.getElementById("counter");
 
-pages.forEach((filename) => {
-  const page = document.createElement("div");
-  page.className = "page";
+let pageFlip;
 
-  const img = document.createElement("img");
-  img.src = filename;
-  img.alt = "Page de l'album";
-  img.draggable = false;
+async function createAlbum() {
+  try {
+    const pdf = await pdfjsLib.getDocument("./album.pdf").promise;
 
-  page.appendChild(img);
-  bookElement.appendChild(page);
-});
+    status.textContent = "Chargement des " + pdf.numPages + " pages...";
 
-const pageFlip = new St.PageFlip(bookElement, {
-  width: 420,
-  height: 560,
-  size: "stretch",
-  minWidth: 280,
-  maxWidth: 900,
-  minHeight: 373,
-  maxHeight: 1200,
-  showCover: false,
-  mobileScrollSupport: false,
-  maxShadowOpacity: 0.35,
-  usePortrait: true,
-  autoSize: true
-});
+    const fragment = document.createDocumentFragment();
 
-pageFlip.loadFromHTML(
-  document.querySelectorAll(".page")
-);
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const pdfPage = await pdf.getPage(i);
 
-function updateCounter() {
-  const current = pageFlip.getCurrentPageIndex() + 1;
-  document.getElementById("counter").textContent =
-    "Page " + current + " / " + pages.length;
+      const viewport = pdfPage.getViewport({ scale: 1.5 });
 
-  document.getElementById("previous").disabled =
-    current === 1;
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
 
-  document.getElementById("next").disabled =
-    current === pages.length;
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      await pdfPage.render({
+        canvasContext: context,
+        viewport: viewport
+      }).promise;
+
+      const page = document.createElement("div");
+      page.className = "page";
+      page.appendChild(canvas);
+
+      fragment.appendChild(page);
+    }
+
+    bookElement.appendChild(fragment);
+
+    const firstPage = await pdf.getPage(1);
+    const originalViewport = firstPage.getViewport({ scale: 1 });
+
+    const pageWidth = Math.round(originalViewport.width);
+    const pageHeight = Math.round(originalViewport.height);
+
+    pageFlip = new St.PageFlip(bookElement, {
+      width: pageWidth,
+      height: pageHeight,
+      size: "stretch",
+      minWidth: 280,
+      maxWidth: 1000,
+      minHeight: 350,
+      maxHeight: 1400,
+      showCover: true,
+      usePortrait: true,
+      autoSize: true,
+      maxShadowOpacity: 0.3,
+      mobileScrollSupport: false
+    });
+
+    pageFlip.loadFromHTML(
+      bookElement.querySelectorAll(".page")
+    );
+
+    function updateCounter() {
+      const current = pageFlip.getCurrentPageIndex() + 1;
+
+      counter.textContent =
+        "Page " + current + " / " + pdf.numPages;
+
+      previousButton.disabled = current === 1;
+      nextButton.disabled = current === pdf.numPages;
+    }
+
+    previousButton.addEventListener("click", () => {
+      pageFlip.flipPrev();
+    });
+
+    nextButton.addEventListener("click", () => {
+      pageFlip.flipNext();
+    });
+
+    pageFlip.on("flip", updateCounter);
+
+    updateCounter();
+
+    status.textContent = "";
+
+  } catch (error) {
+    console.error(error);
+    status.textContent =
+      "Impossible de charger l'album. Vérifiez le fichier album.pdf et réessayez.";
+  }
 }
 
-document.getElementById("previous").addEventListener(
-  "click",
-  () => pageFlip.flipPrev()
-);
-
-document.getElementById("next").addEventListener(
-  "click",
-  () => pageFlip.flipNext()
-);
-
-pageFlip.on("flip", updateCounter);
-
-updateCounter();
+createAlbum();
 </script>
 
 </body>
